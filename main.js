@@ -1,6 +1,10 @@
 (function () {
   'use strict';
 
+  var SUPABASE_URL = 'https://vhbbsrqvkcpmjqeltahh.supabase.co';
+  var SUPABASE_KEY = 'sb_publishable_w307U-W374CxL9eSuBL-3g_MFtR2ER5';
+  var supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
   // Navbar scroll behavior
   var navbar = document.getElementById('navbar');
   var scrollThreshold = 60;
@@ -73,24 +77,6 @@
     observer.observe(el);
   });
 
-  // Smooth scroll for anchor links
-  document.querySelectorAll('a[href^="#"]').forEach(function (link) {
-    link.addEventListener('click', function (e) {
-      var targetId = link.getAttribute('href');
-      if (targetId === '#') return;
-      var target = document.querySelector(targetId);
-      if (target) {
-        e.preventDefault();
-        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        // Close mobile menu if open
-        if (navToggle.classList.contains('active')) {
-          navToggle.classList.remove('active');
-          navCta.style.display = 'none';
-        }
-      }
-    });
-  });
-
   // Video play button — lazy load iframe
   document.querySelectorAll('.play-btn').forEach(function (btn) {
     btn.addEventListener('click', function () {
@@ -117,6 +103,102 @@
       container.innerHTML = '';
       container.style.position = 'relative';
       container.appendChild(iframe);
+    });
+  });
+
+  // ============================
+  // WAITLIST MODAL
+  // ============================
+  var modal = document.getElementById('waitlistModal');
+  var modalClose = document.getElementById('modalClose');
+  var formEl = document.getElementById('waitlistFormEl');
+  var formContainer = document.getElementById('waitlistForm');
+  var successContainer = document.getElementById('waitlistSuccess');
+  var errorEl = document.getElementById('formError');
+  var submitBtn = document.getElementById('submitBtn');
+
+  function openModal(e) {
+    if (e) e.preventDefault();
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+    formContainer.style.display = 'block';
+    successContainer.style.display = 'none';
+    errorEl.style.display = 'none';
+    formEl.reset();
+  }
+
+  function closeModal() {
+    modal.classList.remove('active');
+    document.body.style.overflow = '';
+  }
+
+  document.querySelectorAll('[data-open-waitlist]').forEach(function (trigger) {
+    trigger.addEventListener('click', openModal);
+  });
+
+  modalClose.addEventListener('click', closeModal);
+
+  modal.addEventListener('click', function (e) {
+    if (e.target === modal) closeModal();
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && modal.classList.contains('active')) {
+      closeModal();
+    }
+  });
+
+  formEl.addEventListener('submit', function (e) {
+    e.preventDefault();
+    errorEl.style.display = 'none';
+
+    var name = document.getElementById('waitlistName').value.trim();
+    var email = document.getElementById('waitlistEmail').value.trim();
+
+    if (!name || !email) {
+      errorEl.textContent = 'Por favor completa todos los campos.';
+      errorEl.style.display = 'block';
+      return;
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Enviando...';
+
+    supabase
+      .from('waitlist')
+      .insert({ name: name, email: email })
+      .then(function (result) {
+        if (result.error) {
+          throw new Error(result.error.message || 'Error al registrarte');
+        }
+        formContainer.style.display = 'none';
+        successContainer.style.display = 'block';
+      })
+      .catch(function (err) {
+        errorEl.textContent = err.message || 'Hubo un error. Inténtalo de nuevo.';
+        errorEl.style.display = 'block';
+      })
+      .finally(function () {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Reservar mi lugar';
+      });
+  });
+
+  // Smooth scroll for anchor links (non-waitlist)
+  document.querySelectorAll('a[href^="#"]').forEach(function (link) {
+    if (link.hasAttribute('data-open-waitlist')) return;
+    link.addEventListener('click', function (e) {
+      var targetId = link.getAttribute('href');
+      if (targetId === '#') return;
+      var target = document.querySelector(targetId);
+      if (target) {
+        e.preventDefault();
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        if (navToggle.classList.contains('active')) {
+          navToggle.classList.remove('active');
+          navCta.style.display = 'none';
+        }
+      }
     });
   });
 })();
