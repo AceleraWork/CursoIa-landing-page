@@ -23,11 +23,11 @@
   window.__abVariant = variant;
 
   var path = window.location.pathname;
-  var isRoot = path === '/' || path === '/index.html';
+  var isLanding = path === '/' || path === '/index.html' || path === '/ai' || path === '/ai/';
 
   // First-time B users: reload so Vercel rewrite serves Version B
-  if (!existingVariant && variant === 'b' && isRoot) {
-    window.location.replace('/');
+  if (!existingVariant && variant === 'b' && isLanding) {
+    window.location.replace(path);
     return;
   }
 
